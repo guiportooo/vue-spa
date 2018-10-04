@@ -2,8 +2,6 @@
   <div class="content">
     <div v-if="isAuthenticated">
       <span>Hello authenticated user!</span>
-      <p>Name: {{ profile.firstName }}</p>
-      <p>Favorite Sandwich: {{ profile.favoriteSandwich }}</p>
       <button @click="logout" class="button is-primary">Logout</button>
     </div>
     <div v-else>
@@ -52,55 +50,29 @@
   </div>
 </template>
 <script>
-import appService from '../app.service'
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
   data () {
     return {
       username: '',
-      password: '',
-      isAuthenticated: false,
-      profile: {}
+      password: ''
     }
   },
-  watch: {
-    isAuthenticated: function (val) {
-      if (val) {
-        appService.getProfile()
-          .then(profile => {
-            this.profile = profile
-          })
-      } else {
-        this.profile = {}
-      }
-    }
+  computed: {
+    ...mapGetters('loginModule', ['isAuthenticated'])
   },
   methods: {
+    ...mapActions({
+      logout: 'loginModule/logout',
+      callLogin: 'loginModule/login'
+    }),
     login () {
-      appService
-        .login({ username: this.username, password: this.password })
-        .then(data => {
-          console.log('data', data)
-          window.localStorage.setItem('token', data.token)
-          window.localStorage.setItem('tokenExpiration', data.expiration)
+      this.callLogin({ username: this.username, password: this.password })
+        .then(() => {
           this.username = ''
           this.password = ''
-          this.isAuthenticated = true
         })
-        .catch(() => window.alert('Could not login!'))
-    },
-    logout () {
-      window.localStorage.setItem('token', null)
-      window.localStorage.setItem('tokenExpiration', null)
-      this.isAuthenticated = false
-    }
-  },
-  created () {
-    let expiration = window.localStorage.getItem('tokenExpiration')
-    let unixTimestamp = new Date().getTime() / 1000
-
-    if (expiration !== null && parseInt(expiration) - unixTimestamp > 0) {
-      this.isAuthenticated = true
     }
   }
 }
